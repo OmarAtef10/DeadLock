@@ -6,13 +6,13 @@ import java.util.Scanner;
 public class DeadLock {
     int resource_num;
     int process_num;
-    int [] totalResources;
-    int [] available; //the available amount of each resource
-    int [][] maximum; //the maximum demand of each process
-    int [][] allocation; //the amount currently allocated to each process
-    int [][] need; //the remaining needs of each process
+    int[] totalResources;
+    int[] originalAvailable;
+    int[] available; //the available amount of each resource
+    int[][] maximum; //the maximum demand of each process
+    int[][] allocation; //the amount currently allocated to each process
+    int[][] need; //the remaining needs of each process
     ArrayList<String> safeSequence;
-
 
 
     public static void main(String[] args) {
@@ -23,11 +23,11 @@ public class DeadLock {
         System.out.println("Enter number of resources: ");
         int resource_num = input.nextInt();
 
-        deadLock.initializeSystem(process_num,resource_num);
+        deadLock.initializeSystem(process_num, resource_num);
 
     }
 
-    public void initializeSystem(int process_num,int resource_num) {
+    public void initializeSystem(int process_num, int resource_num) {
         Scanner input = new Scanner(System.in);
 
         this.resource_num = resource_num;
@@ -37,22 +37,26 @@ public class DeadLock {
 
         this.totalResources = new int[resource_num];
 
-        this.available = new int[]{1,5,2,0};
+        this.originalAvailable = new int[resource_num];
+        this.available = new int[]{1, 5, 2, 0};
+        for(int i=0; i<available.length; i++){
+            this.originalAvailable[i] = available[i];
+        }
 
         this.maximum = new int[][]{
-                {0,0,1,2},
-                {1,7,5,0},
-                {2,3,5,6},
-                {0,6,5,2},
-                {0,6,5,6}
+                {0, 0, 1, 2},
+                {1, 7, 5, 0},
+                {2, 3, 5, 6},
+                {0, 6, 5, 2},
+                {0, 6, 5, 6}
         };
 
         this.allocation = new int[][]{
-                {0,0,1,2},
-                {1,0,0,0},
-                {1,3,5,4},
-                {0,6,3,2},
-                {0,0,1,4}
+                {0, 0, 1, 2},
+                {1, 0, 0, 0},
+                {1, 3, 5, 4},
+                {0, 6, 3, 2},
+                {0, 0, 1, 4}
         };
 
         this.need = new int[process_num][resource_num];
@@ -86,67 +90,102 @@ public class DeadLock {
 //        }
 
 
-        for(int i=0; i<process_num; i++){
-            for(int j=0; j<resource_num; j++){
-                this.need[i][j] = maximum[i][j]-allocation[i][j];
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                this.need[i][j] = maximum[i][j] - allocation[i][j];
             }
         }
 
-        for(int i=0; i<process_num; i++){
-            for(int j=0; j<resource_num; j++){
-                totalResources[j]+= allocation[i][j];
-            }
-        }
-
-        for(int i=0; i<resource_num; i++){
-            totalResources[i]+= available[i];
-        }
+        calculateTotalResources();
         viewCurrentState();
         bankersAlgorithm();
         viewCurrentState();
     }
 
-    public void viewCurrentState(){
+    public void calculateTotalResources(){
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                totalResources[j] += allocation[i][j];
+            }
+        }
+
+        for (int i = 0; i < resource_num; i++) {
+            totalResources[i] += available[i];
+        }
+    }
+
+    public void viewCurrentState() {
         System.out.println("Available resources");
-        for(int i=0; i<resource_num; i++){
-            System.out.print(this.available[i]+" ");
+        for (int i = 0; i < resource_num; i++) {
+            System.out.print(this.available[i] + " ");
         }
         System.out.println();
 
         System.out.println("Allocated resources");
-        for(int i=0; i<process_num; i++){
-            for(int j=0; j<resource_num; j++){
-                System.out.print(this.allocation[i][j]+" ");
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                System.out.print(this.allocation[i][j] + " ");
             }
             System.out.println();
         }
 
         System.out.println("Maximum resources");
-        for(int i=0; i<process_num; i++){
-            for(int j=0; j<resource_num; j++){
-                System.out.print(this.maximum[i][j]+" ");
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                System.out.print(this.maximum[i][j] + " ");
             }
             System.out.println();
         }
 
         System.out.println("Need Matrix");
-        for(int i=0; i<process_num; i++){
-            for(int j=0; j<resource_num; j++){
-                System.out.print(this.need[i][j]+" ");
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                System.out.print(this.need[i][j] + " ");
             }
             System.out.println();
         }
 
         System.out.println("Total Resources");
-        for(int i=0; i<resource_num; i++){
-            System.out.print(totalResources[i]+" ");
+        for (int i = 0; i < resource_num; i++) {
+            System.out.print(totalResources[i] + " ");
         }
         System.out.println();
     }
 
-    public void bankersAlgorithm(){
+    public void recoverAlgorithm() {
+        int p_num = killMaxResourceProcess();
+        safeSequence = new ArrayList<>();
+        this.available = originalAvailable;
+        for (int i = 0; i < resource_num; i++) {
+            available[i] += allocation[p_num][i];
+            need[p_num][i] += allocation[p_num][i];
+            allocation[p_num][i] = 0;
+        }
+        calculateTotalResources();
+        viewCurrentState();
+    }
+
+    public int killMaxResourceProcess() {
+        int totalAllocated = 0;
+        int maxAllocated = 0;
+        int p_num = 0;
+        for (int i = 0; i < process_num; i++) {
+            for (int j = 0; j < resource_num; j++) {
+                totalAllocated += allocation[i][j];
+            }
+            if (totalAllocated > maxAllocated) {
+                maxAllocated = totalAllocated;
+                p_num = i;
+            }
+            totalAllocated = 0;
+        }
+        System.out.println("Killed P"+p_num);
+        return p_num;
+    }
+
+    public void bankersAlgorithm() {
         ArrayList<Boolean> state = new ArrayList<>();
-        for(int i=0; i<process_num; i++){
+        for (int i = 0; i < process_num; i++) {
             state.add(false);
         }
 
@@ -155,50 +194,50 @@ public class DeadLock {
         while (true) {
             prevFalseCount = false_count;
             for (int i = 0; i < process_num; i++) {
-                if(!state.get(i)) {
+                if (!state.get(i)) {
                     if (compareNeedAvailable(i)) {
                         System.out.println("P" + i + " finished");
-                        safeSequence.add("P"+i);
-                        state.set(i,true);
+                        safeSequence.add("P" + i);
+                        state.set(i, true);
                         false_count--;
                     } else {
                         System.out.println("P" + i + " no needed res");
-                        state.set(i,false);
+                        state.set(i, false);
                     }
                 }
             }
             boolean hasFalse = state.contains(false);
 
-            if(!hasFalse){
+            if (!hasFalse) {
                 getSafeSequence();
                 break;
             }
 
-            if(false_count == prevFalseCount){
-                System.out.println("Deadlock, no safe sequence could be obtained!");
-                break;
+            if (false_count == prevFalseCount) {
+                System.out.println("Deadlock, no safe sequence could be obtained!, Entering Recovery Algorithm...");
+                recoverAlgorithm();
             }
         }
     }
 
-    public void getSafeSequence(){
+    public void getSafeSequence() {
         System.out.print("<");
-        for(int i=0; i<safeSequence.size(); i++){
-            System.out.print(safeSequence.get(i)+",");
+        for (int i = 0; i < safeSequence.size(); i++) {
+            System.out.print(safeSequence.get(i) + ",");
         }
         System.out.print(">\n");
     }
 
-    public boolean compareNeedAvailable(int need_row){
+    public boolean compareNeedAvailable(int need_row) {
         boolean sufficient = true;
-        for(int i=0; i<available.length; i++){
-            if(available[i] < need[need_row][i] ){
+        for (int i = 0; i < available.length; i++) {
+            if (available[i] < need[need_row][i]) {
                 sufficient = false;
             }
         }
 
-        if(sufficient){
-            for(int i=0; i<resource_num; i++){
+        if (sufficient) {
+            for (int i = 0; i < resource_num; i++) {
                 this.available[i] += this.allocation[need_row][i];
             }
         }
