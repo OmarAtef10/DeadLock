@@ -47,7 +47,7 @@ public class DeadLock {
                 deadLock.RQ();
             }
             if(choice==3){
-
+                deadLock.RL();
             }
 
 
