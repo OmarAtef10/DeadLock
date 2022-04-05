@@ -326,6 +326,32 @@ public class DeadLock {
         bankersAlgorithm();
     }
 
-    public void RL(){}
+    public void RL(){
+        resetStateOriginal();
+        Scanner input = new Scanner(System.in);
+        int[] resources = new int[resource_num];
+        Boolean enoughResources = true;
+        System.out.println("Enter process number: ");
+        int p_num = input.nextInt();
+        System.out.println("Enter resources to release: ");
+        for (int i = 0; i < resource_num; i++){
+            resources[i] = input.nextInt();
+            if (!(resources[i] <= allocation[p_num][i])){
+                enoughResources = false;
+            }
+        }
+        if (enoughResources){
+            for (int i = 0; i < resource_num; i++){
+                allocation[p_num][i] -= resources[i];
+                available[i] += resources[i];
+            }
+            calculateNeedMatrix();
+            calculateTotalResources();
+            bankersAlgorithm();
+        }
+        else {
+            System.out.println("Can not release resources");
+        }
+    }
 
 }
